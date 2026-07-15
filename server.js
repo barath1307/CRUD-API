@@ -4,8 +4,25 @@ const app = express();
 
 const PORT = 3000;
 
+// Parse JSON request bodies
+app.use(express.json());
+
+// Root Endpoint
 app.get("/", (req, res) => {
-    res.send("Hello, Backend!");
+    res.json({
+        name: "Task API",
+        version: "1.0",
+        endpoints: [
+            "/tasks"
+        ]
+    });
+});
+
+// Health Endpoint
+app.get("/health", (req, res) => {
+    res.json({
+        status: "ok"
+    });
 });
 
 app.listen(PORT, () => {
