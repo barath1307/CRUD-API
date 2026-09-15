@@ -7,6 +7,29 @@ const PORT = 3000;
 
 // Middleware
 app.use(express.json());
+const Database = require("better-sqlite3");
+
+const db = new Database("tasks.db");
+
+db.prepare(`
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        done INTEGER NOT NULL DEFAULT 0
+    )
+`).run();
+
+const taskCount = db.prepare("SELECT COUNT(*) AS count FROM tasks").get();
+
+if (taskCount.count === 0) {
+    const insertTask = db.prepare(
+        "INSERT INTO tasks (title, done) VALUES (?, ?)"
+    );
+
+    insertTask.run("Learn Express", 0);
+    insertTask.run("Build CRUD API", 0);
+    insertTask.run("Push to GitHub", 0);
+}
 
 // In-memory task list
 let tasks = [
