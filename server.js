@@ -70,14 +70,24 @@ app.get("/health", (req, res) => {
 
 // Get all tasks
 app.get("/tasks", (req, res) => {
-    res.json(tasks);
+    const tasks = db.prepare("SELECT * FROM tasks").all();
+
+    res.json(
+        tasks.map(task => ({
+            id: task.id,
+            title: task.title,
+            done: Boolean(task.done)
+        }))
+    );
 });
 
 // Get task by ID
 app.get("/tasks/:id", (req, res) => {
     const id = parseInt(req.params.id);
 
-    const task = tasks.find(task => task.id === id);
+    const task = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(id);
 
     if (!task) {
         return res.status(404).json({
@@ -85,7 +95,11 @@ app.get("/tasks/:id", (req, res) => {
         });
     }
 
-    res.json(task);
+    res.json({
+        id: task.id,
+        title: task.title,
+        done: Boolean(task.done)
+    });
 });
 
 // Create a new task
