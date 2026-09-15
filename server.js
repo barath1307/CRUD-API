@@ -128,10 +128,11 @@ const newTask = {
 
 // Update a task
 app.put("/tasks/:id", (req, res) => {
-
     const id = parseInt(req.params.id);
 
-    const task = tasks.find(task => task.id === id);
+    const task = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(id);
 
     if (!task) {
         return res.status(404).json({
@@ -141,41 +142,46 @@ app.put("/tasks/:id", (req, res) => {
 
     const { title, done } = req.body;
 
-    if (title !== undefined) {
-        if (title.trim() === "") {
-            return res.status(400).json({
-                error: "Title cannot be empty"
-            });
-        }
-        task.title = title;
+    if (title !== undefined && title.trim() === "") {
+        return res.status(400).json({
+            error: "Title cannot be empty"
+        });
     }
 
-    if (done !== undefined) {
-        task.done = done;
-    }
+    const updatedTitle = title !== undefined ? title : task.title;
+    const updatedDone = done !== undefined ? (done ? 1 : 0) : task.done;
 
-    res.json(task);
+    db.prepare(`
+        UPDATE tasks
+        SET title = ?, done = ?
+        WHERE id = ?
+    `).run(updatedTitle, updatedDone, id);
+
+    res.json({
+        id: id,
+        title: updatedTitle,
+        done: Boolean(updatedDone)
+    });
 });
 
 // Delete a task
 app.delete("/tasks/:id", (req, res) => {
-
     const id = parseInt(req.params.id);
 
-    const index = tasks.findIndex(task => task.id === id);
+    const task = db
+        .prepare("SELECT * FROM tasks WHERE id = ?")
+        .get(id);
 
-    if (index === -1) {
+    if (!task) {
         return res.status(404).json({
             error: `Task ${id} not found`
         });
     }
 
-    tasks.splice(index, 1);
+    db.prepare("DELETE FROM tasks WHERE id = ?").run(id);
 
     res.status(204).send();
 });
-
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Start Server
 app.listen(PORT, () => {
